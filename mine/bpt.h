@@ -23,10 +23,13 @@ typedef struct _bpt_node
 {
     u8      is_leaf;
     u8      is_root;
-    u32     key_num;    // num of children
+    u32     key_num;
+    // key[0..key_num-1]
+    // if this's a node, it's the key split range
+    // if this's a leaf, it's the key associated data
     u32     key[ M ];
-    // if this is a leaf, pointer[] is the data
-    // if this is a node, pointer[] points to children
+    // if this's a node, pointer[0..key_num] points to children
+    // if this's a leaf, pointer[1..key_num] points the data
     void    * pointer[ M + 1 ];
     struct  _bpt_node * father;
 }bpt_node;
