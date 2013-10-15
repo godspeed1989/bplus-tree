@@ -6,7 +6,7 @@ void print_bpt(bpt_node* node)
     u32 i;
     if(!node -> is_leaf) // node
     {    
-        printf("n%p[label=\"", node);
+        printf("n%p[shape=box,label=\"", node);
         for(i = 0; i < node->key_num; ++i)
             printf(" %d ", node->key[i]);
         printf( "\"];\n");
@@ -19,13 +19,15 @@ void print_bpt(bpt_node* node)
     }
     else // is a leaf
     {
-        printf("n%p[label=\"", node);
-        // pointer[0..key_num-1] points the data
+        printf("n%p[shape=box,label=\"", node);
+        // pointer[1..key_num] points the data
         for(i = 0; i < node->key_num; ++i)
         {
             printf("%d-%d\\n", node->key[i], (u32)node->pointer[i+1]);
         }
         printf( "\"];\n");
+        if(node->pointer[0])
+            printf(" n%p->n%p;//sibling\n", node, node->pointer[0]);
     }
 }
 
@@ -43,9 +45,9 @@ int main()
     u32 i;
     initial_bpt();
 
-    for(i = 0; i < M*20; ++i)
+    for(i = 0; i < M*10; ++i)
         insert_in_bpt(i, (void*)(i<<1));
-    for(i = 0; i < M*20; i+=2)
+    for(i = 0; i < M*10; i+=2)
         delete_in_bpt(i);
 
     dump_all();

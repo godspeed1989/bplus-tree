@@ -53,44 +53,51 @@ static void insert_in_node( bpt_node *node , u32 key , void *value );
 
 static void split( bpt_node *node )
 {
-    splite_count ++ ;
-    bpt_node *nodd = new_bpt_node() ;
-    u32 i, mid_key = node -> key[ M / 2 ] ;
+    u32 i, mid_key;
+    bpt_node *nnode;
 
-    nodd -> key_num = M - M / 2 - 1 ;
-    for ( i = 0 ; i < nodd -> key_num ; i ++ )
+    splite_count ++;
+
+    // prepare the new node
+    nnode = new_bpt_node();
+    nnode -> key_num = M - M / 2 - 1;
+    for ( i = 0 ; i < nnode -> key_num ; i ++ )
     {
-        nodd -> key[ i ] = node -> key[ i + ( M / 2 + 1 ) ] ;
-        nodd -> pointer[ i ] = node -> pointer[ i + ( M / 2 + 1 ) ] ;
+        nnode -> key[ i ] = node -> key[ i + ( M / 2 + 1 ) ];
+        // children
+        nnode -> pointer[ i ] = node -> pointer[ i + ( M / 2 + 1 ) ];
     }
-    nodd -> pointer[ nodd -> key_num ] = node -> pointer[ M ] ;
-    node -> key_num = M / 2 ;
+    nnode -> pointer[ nnode -> key_num ] = node -> pointer[ M ];
 
+    mid_key = node -> key[ M / 2 ];
+    node -> key_num = M / 2;
+    // origin node is a leaf
     if ( node -> is_leaf )
     {
-        node -> key_num ++ ;
-        nodd -> pointer[ 0 ] = node -> pointer[ 0 ] ;
-        node -> pointer[ 0 ] = nodd ;
-        nodd -> is_leaf = 1 ;
-        mid_key = node -> key[ M / 2 + 1 ] ;
+        nnode -> is_leaf = 1;
+        node -> key_num ++;
+        // set up sibling
+        nnode -> pointer[ 0 ] = node -> pointer[ 0 ];
+        node -> pointer[ 0 ] = nnode;
+        mid_key = node -> key[ M / 2 + 1 ];
     }
 
     if ( node -> is_root )
     {
-        node -> is_root = 0 ;
-        root = new_bpt_node() ;
-        root -> is_root = 1 ;
-        root -> key[ 0 ] = mid_key ;
-        root -> pointer[ 0 ] = node ;
-        root -> pointer[ 1 ] = nodd ;
-        root -> key_num = 1 ;
+        node -> is_root = 0;
+        root = new_bpt_node();
+        root -> is_root = 1;
+        root -> key_num = 1;
+        root -> key[ 0 ] = mid_key;
+        root -> pointer[ 0 ] =  node;
+        root -> pointer[ 1 ] = nnode;
 
-        node -> father = nodd -> father = root ;
+        node -> father = nnode -> father = root;
     }
     else
     {
-        nodd -> father = node -> father ;
-        insert_in_node( ( bpt_node * ) node -> father , mid_key , ( void *) nodd ) ;
+        nnode -> father = node -> father;
+        insert_in_node( ( bpt_node * ) node -> father , mid_key , ( void *) nnode ) ;
     }
 }
 
