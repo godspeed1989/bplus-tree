@@ -48,6 +48,7 @@
 // #define WINDOWS
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <stdbool.h>
 #ifdef WINDOWS
 #define bool char
@@ -288,6 +289,7 @@ void usage_2( void ) {
 	printf("\tx -- Destroy the whole tree.  Start again with an empty tree of the same order.\n");
 	printf("\tt -- Print the B+ tree.\n");
 	printf("\tl -- Print the keys of the leaves (bottom row of the tree).\n");
+	printf("\tD -- Print the B+ tree to .dot file.\n");
 	printf("\tv -- Toggle output of pointer addresses (\"verbose\") in tree and leaves.\n");
 	printf("\tq -- Quit. (Or use Ctl-D.)\n");
 	printf("\t? -- Print this help message.\n");
@@ -446,6 +448,55 @@ void print_tree( node * root ) {
 	printf("\n");
 }
 
+void print_tree_file( node * root )
+{
+	FILE *fp;
+	time_t tim;
+	struct tm *at;
+	char filename[64];
+
+	node * n = NULL;
+	int i = 0;
+
+	time(&tim);
+	at = localtime(&tim);
+	strftime(filename, 63, "%Y%m%d%H%M%S.dot", at);
+	fp = fopen(filename, "w");
+	if( fp == NULL ) {
+		printf("open %s error\n", filename);
+		return;
+	}
+	fprintf(fp, "digraph {\n");
+	fprintf(fp, "graph[ordering=\"out\"];\n");
+	fprintf(fp, "node[fontcolor=\"#990000\",shape=plaintext];\n");
+	fprintf(fp, "edge[arrowsize=0.6,fontsize=6];\n");
+	if( root == NULL ) {
+		fprintf(fp, "null[shape=box]\n");
+		return;
+	}
+	queue = NULL;
+	enqueue(root);
+	while ( queue != NULL ) {
+		n = dequeue();
+		fprintf(fp, "n%p[label=\"", n);
+		for (i = 0; i < n->num_keys; i++) {
+			fprintf(fp, " %d ", n->keys[i]);
+		}
+		fprintf(fp, "\",shape=box];\n");
+		if (!n->is_leaf) {
+			for (i = 0; i <= n->num_keys; i++) {
+				fprintf(fp, " n%p -> n%p;\n", n, n->pointers[i]);
+				enqueue(n->pointers[i]);
+			}
+		}
+		else {
+			if(n->pointers[order - 1])
+				fprintf(fp, " n%p -> n%p[constraint=false];\n", n, n->pointers[order - 1]);
+		}
+	}
+	fprintf(fp, "}\n");
+	fclose(fp);
+}
 
 /* Finds the record under a given key and prints an
  * appropriate message to stdout.
@@ -1500,6 +1551,9 @@ int main( int argc, char ** argv ) {
 			break;
 		case 't':
 			print_tree(root);
+			break;
+		case 'D':
+			print_tree_file(root);
 			break;
 		case 'v':
 			verbose_output = !verbose_output;
