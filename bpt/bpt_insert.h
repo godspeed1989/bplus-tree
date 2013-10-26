@@ -1,4 +1,6 @@
 
+node * insert_into_parent(node * root, node * left, int key, node * right);
+
 /* Inserts a new pointer to a record and its corresponding key into a leaf.
  * Returns the altered leaf.
  */
@@ -44,7 +46,7 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, recor
 	assert(temp_keys);
 
 	temp_pointers = malloc( order * sizeof(void *) );
-	assert(temp_pointers == NULL);
+	assert(temp_pointers);
 
 	// locate insert index
 	insertion_index = 0;
@@ -196,11 +198,28 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
 	return insert_into_parent(root, old_node, k_prime, new_node);
 }
 
+/* Creates a new root for two subtrees
+ * and inserts the appropriate key into
+ * the new root.
+ */
+node * insert_into_new_root(node * left, int key, node * right)
+{
+	node * root = make_node();
+	root->keys[0] = key;
+	root->pointers[0] = left;
+	root->pointers[1] = right;
+	root->num_keys++;
+	root->parent = NULL;
+	left->parent = root;
+	right->parent = root;
+	return root;
+}
+
 /* Inserts a new node (leaf or internal node) into the B+ tree.
  * Returns the root of the tree after insertion.
  */
-node * insert_into_parent(node * root, node * left, int key, node * right) {
-
+node * insert_into_parent(node * root, node * left, int key, node * right)
+{
 	int left_index;
 	node * parent;
 
@@ -225,19 +244,69 @@ node * insert_into_parent(node * root, node * left, int key, node * right) {
 	return insert_into_node_after_splitting(root, parent, left_index, key, right);
 }
 
-/* Creates a new root for two subtrees
- * and inserts the appropriate key into
- * the new root.
+/* First insertion:
+ * start a new tree.
  */
-node * insert_into_new_root(node * left, int key, node * right) {
+node * start_new_tree(int key, record * pointer) {
 
-	node * root = make_node();
+	node * root = make_leaf();
 	root->keys[0] = key;
-	root->pointers[0] = left;
-	root->pointers[1] = right;
-	root->num_keys++;
+	root->pointers[0] = pointer;
+	root->pointers[order - 1] = NULL;
 	root->parent = NULL;
-	left->parent = root;
-	right->parent = root;
+	root->num_keys++;
 	return root;
+}
+
+/* Master insertion function.
+ * Inserts a key and an associated value into
+ * the B+ tree, causing the tree to be adjusted
+ * however necessary to maintain the B+ tree
+ * properties.
+ */
+node * insert( node * root, int key, int value )
+{
+	record * pointer;
+	node * leaf;
+
+	/* The current implementation ignores
+	 * duplicates.
+	 */
+
+	if (find(root, key) != NULL)
+		return root;
+
+	/* Create a new record for the
+	 * value.
+	 */
+	pointer = make_record(value);
+
+
+	/* Case: the tree does not exist yet.
+	 * Start a new tree.
+	 */
+
+	if (root == NULL) 
+		return start_new_tree(key, pointer);
+
+
+	/* Case: the tree already exists.
+	 * (Rest of function body.)
+	 */
+
+	leaf = find_leaf(root, key);
+
+	/* Case: leaf has room for key and pointer.
+	 */
+
+	if (leaf->num_keys < order - 1) {
+		leaf = insert_into_leaf(leaf, key, pointer);
+		return root;
+	}
+
+
+	/* Case:  leaf must be split.
+	 */
+
+	return insert_into_leaf_after_splitting(root, leaf, key, pointer);
 }

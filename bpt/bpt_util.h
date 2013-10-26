@@ -26,43 +26,6 @@ int path_to_root( node * root, node * child )
 	return length;
 }
 
-/* Traces the path from the root to a leaf, searching by key.
- * Returns the leaf containing the given key.
- */
-node * find_leaf( node * root, int key )
-{
-	int i = 0;
-	node * c = root;
-	if (c == NULL)
-	return c;
-	while (!c->is_leaf)
-	{
-		i = 0;
-		while (i < c->num_keys)
-		{
-			if (key < c->keys[i])
-			break;
-			i++;
-		}
-		c = (node *)c->pointers[i];
-	}
-	return c;
-}
-
-/* Finds and returns the record to which a key refers. */
-record * find( node * root, int key )
-{
-	int i = 0;
-	node * c = find_leaf( root, key );
-	if (c == NULL) return NULL;
-	for (i = 0; i < c->num_keys; i++)
-	if (c->keys[i] == key)
-	{
-		return (record *)c->pointers[i];
-	}
-	return NULL;
-}
-
 node * make_node( void )
 {
 	node * new_node;
@@ -81,10 +44,101 @@ node * make_node( void )
 	return new_node;
 }
 
+record * make_record(int value)
+{
+	record * new_record = (record *)malloc(sizeof(record));
+	assert (new_record);
+	new_record->value = value;
+	return new_record;
+}
+
+node * make_leaf( void )
+{
+	node * leaf = make_node();
+	leaf->is_leaf = true;
+	return leaf;
+}
+
+
 int cut( int length )
 {
 	if (length % 2 == 0)
 		return length/2;
 	else
 		return length/2 + 1;
+}
+
+node * queue = NULL;
+
+void enqueue( node * new_node ) {
+	node * c;
+	if (queue == NULL) {
+		queue = new_node;
+		queue->next = NULL;
+	}
+	else {
+		c = queue;
+		while(c->next != NULL) {
+			c = c->next;
+		}
+		c->next = new_node;
+		new_node->next = NULL;
+	}
+}
+
+node * dequeue( void ) {
+	node * n = queue;
+	queue = queue->next;
+	n->next = NULL;
+	return n;
+}
+
+void print_tree_file( node * root )
+{
+	FILE *fp;
+	time_t tim;
+	struct tm *at;
+	char filename[64];
+
+	node * n = NULL;
+	int i = 0;
+
+	time(&tim);
+	at = localtime(&tim);
+	strftime(filename, 63, "%Y%m%d%H%M%S.dot", at);
+	fp = fopen(filename, "w");
+	if( fp == NULL ) {
+		printf("open %s error\n", filename);
+		return;
+	}
+	fprintf(fp, "digraph {\n");
+	fprintf(fp, "graph[ordering=\"out\"];\n");
+	fprintf(fp, "node[fontcolor=\"#990000\",shape=plaintext];\n");
+	fprintf(fp, "edge[arrowsize=0.6,fontsize=6];\n");
+	if( root == NULL ) {
+		fprintf(fp, "null[shape=box]\n");
+		return;
+	}
+	queue = NULL;
+	enqueue(root);
+	while ( queue != NULL ) {
+		n = dequeue();
+		fprintf(fp, "n%p[label=\"", n);
+		for (i = 0; i < n->num_keys; i++) {
+			fprintf(fp, " %d ", n->keys[i]);
+		}
+		fprintf(fp, "\",shape=box];\n");
+		if (!n->is_leaf) {
+			for (i = 0; i <= n->num_keys; i++) {
+				fprintf(fp, " n%p -> n%p;\n", n, n->pointers[i]);
+				enqueue(n->pointers[i]);
+			}
+		}
+		else {
+			if(n->pointers[order - 1])
+				fprintf(fp, " n%p -> n%p[constraint=false];\n", n, n->pointers[order - 1]);
+		}
+	}
+	fprintf(fp, "}\n");
+	fclose(fp);
 }

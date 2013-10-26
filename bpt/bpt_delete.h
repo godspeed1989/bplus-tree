@@ -1,6 +1,5 @@
 
-
-// DELETION.
+node * delete_entry( node * root, node * n, int key, void * pointer );
 
 /* Utility function for deletion.  Retrieves
  * the index of a node's nearest neighbor (sibling)
@@ -252,7 +251,8 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
  * maximum
  */
 node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_index, 
-		int k_prime_index, int k_prime) {  
+		int k_prime_index, int k_prime)
+{  
 
 	int i;
 	node * tmp;
@@ -324,12 +324,11 @@ node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_i
 
 
 /* Deletes an entry from the B+ tree.
- * Removes the record and its key and pointer
- * from the leaf, and then makes all appropriate
- * changes to preserve the B+ tree properties.
+ * Removes the record and its key and pointer from the leaf,
+ * and then makes all appropriate changes to preserve the B+ tree properties.
  */
-node * delete_entry( node * root, node * n, int key, void * pointer ) {
-
+node * delete_entry( node * root, node * n, int key, void * pointer )
+{
 	int min_keys;
 	node * neighbor;
 	int neighbor_index;
@@ -395,9 +394,7 @@ node * delete_entry( node * root, node * n, int key, void * pointer ) {
 		return redistribute_nodes(root, n, neighbor, neighbor_index, k_prime_index, k_prime);
 }
 
-
-/* Master deletion function.
- */
+/* Master deletion function. */
 node * delete(node * root, int key)
 {
 	node * key_leaf;
@@ -405,9 +402,30 @@ node * delete(node * root, int key)
 
 	key_record = find(root, key);
 	key_leaf = find_leaf(root, key);
-	if (key_record != NULL && key_leaf != NULL) {
+	if (key_record != NULL && key_leaf != NULL)
+	{
 		root = delete_entry(root, key_leaf, key, key_record);
 		free(key_record);
 	}
 	return root;
+}
+
+void destroy_tree_nodes(node * root)
+{
+	int i;
+	if (root->is_leaf)
+		for (i = 0; i < root->num_keys; i++)
+			free(root->pointers[i]);
+	else
+		for (i = 0; i < root->num_keys + 1; i++)
+			destroy_tree_nodes(root->pointers[i]);
+	free(root->pointers);
+	free(root->keys);
+	free(root);
+}
+
+node * destroy_tree(node * root)
+{
+	destroy_tree_nodes(root);
+	return NULL;
 }
