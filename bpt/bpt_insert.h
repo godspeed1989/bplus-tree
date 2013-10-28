@@ -16,7 +16,6 @@ node * insert_into_leaf( node * leaf, int key, record * pointer )
 		insertion_point++;
 	}
 
-
 	for (i = leaf->num_keys; i > insertion_point; i--)
 	{
 		leaf->keys[i] = leaf->keys[i - 1];
@@ -40,8 +39,6 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, recor
 
 	int insertion_index, split, new_key, i, j;
 
-	new_leaf = make_leaf();
-
 	temp_keys = malloc( order * sizeof(int) );
 	assert(temp_keys);
 
@@ -62,24 +59,23 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, recor
 	temp_keys[insertion_index] = key;
 	temp_pointers[insertion_index] = pointer;
 
-	leaf->num_keys = 0;
-
 	split = cut(order - 1);
-	// upper half
-	for (i = 0; i < split; i++) {
+	// old leaf
+	leaf->num_keys = split;
+	for (i = 0; i < split; i++)
+	{
 		leaf->pointers[i] = temp_pointers[i];
 		leaf->keys[i] = temp_keys[i];
-		leaf->num_keys++;
 	}
-	// lower half
-	for (i = split, j = 0; i < order; i++, j++) {
+	// new leaf
+	new_leaf = make_leaf();
+	new_leaf->num_keys = order - split;
+	for (i = split, j = 0; i < order; i++, j++)
+	{
 		new_leaf->pointers[j] = temp_pointers[i];
 		new_leaf->keys[j] = temp_keys[i];
-		new_leaf->num_keys++;
 	}
-
-	free(temp_pointers);
-	free(temp_keys);
+	new_leaf->parent = leaf->parent;
 	// The last pointer points to the leaf to the right
 	new_leaf->pointers[order - 1] = leaf->pointers[order - 1];
 	leaf->pointers[order - 1] = new_leaf;
@@ -89,75 +85,74 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, recor
 	for (i = new_leaf->num_keys; i < order - 1; i++)
 		new_leaf->pointers[i] = NULL;
 
-	new_leaf->parent = leaf->parent;
 	new_key = new_leaf->keys[0];
+
+	free(temp_pointers);
+	free(temp_keys);
 
 	return insert_into_parent(root, leaf, new_key, new_leaf);
 }
 
 // get index of leaf
-int get_left_index(node * parent, node * left)
+int get_child_index(node * parent, node * child)
 {
-	int left_index = 0;
-	while (left_index <= parent->num_keys && 
-			parent->pointers[left_index] != left)
-		left_index++;
-	return left_index;
+	int index = 0;
+	while (index <= parent->num_keys && 
+			parent->pointers[index] != child)
+		index++;
+	return index;
 }
 
-/* Inserts a new key and pointer to a node into a node into which 
+/* Inserts a new key and pointer into a node 'n' into which 
  * these can fit without violating the B+ tree properties.
  */
 node * insert_into_node(node * root, node * n, int left_index, int key, node * right)
 {
 	int i;
-
 	for (i = n->num_keys; i > left_index; i--)
 	{
 		n->pointers[i + 1] = n->pointers[i];
 		n->keys[i] = n->keys[i - 1];
 	}
-	n->pointers[left_index + 1] = right;
 	n->keys[left_index] = key;
+	n->pointers[left_index + 1] = right;
 	n->num_keys++;
 	return root;
 }
 
-/* Inserts a new key and pointer to a node into a node,
+/* Inserts a new key and pointer into a node old_node,
  * causing the node's size to exceed the order,
  * and causing the node to split into two.
  */
 node * insert_into_node_after_splitting(node * root, node * old_node, int left_index,  int key, node * right)
 {
-
 	int i, j, split, k_prime;
-	node * new_node, * child;
+	node * new_node;
 	int * temp_keys;
 	node ** temp_pointers;
 
 	/* First create a temporary set of keys and pointers
-	 * to hold everything in order, including
-	 * the new key and pointer, inserted in their
-	 * correct places. 
-	 * Then create a new node and copy half of the 
-	 * keys and pointers to the old node and
-	 * the other half to the new.
+	 * to hold everything in order, including the new key and pointer,
+	 * inserted in their correct places. 
+	 * Then create a new node and copy half of the keys and pointers
+	 * to the old node and the other half to the new.
 	 */
-
 	temp_pointers = malloc( (order + 1) * sizeof(node *) );
 	assert(temp_pointers);
 	temp_keys = malloc( order * sizeof(int) );
 	assert(temp_keys);
 
-	for (i = 0, j = 0; i < old_node->num_keys + 1; i++, j++) {
+	for (i = 0, j = 0; i < old_node->num_keys + 1; i++, j++)
+	{
 		if (j == left_index + 1) j++;
 		temp_pointers[j] = old_node->pointers[i];
 	}
-	for (i = 0, j = 0; i < old_node->num_keys; i++, j++) {
+	temp_pointers[left_index + 1] = right;
+	for (i = 0, j = 0; i < old_node->num_keys; i++, j++)
+	{
 		if (j == left_index) j++;
 		temp_keys[j] = old_node->keys[i];
 	}
-	temp_pointers[left_index + 1] = right;
 	temp_keys[left_index] = key;
 
 	/* Create the new node and copy
@@ -165,36 +160,37 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
 	 * old and half to the new.
 	 */  
 	split = cut(order);
-	new_node = make_node();
-	old_node->num_keys = 0;
-	for (i = 0; i < split - 1; i++) {
+	// reconstruct old node
+	old_node->num_keys = split - 1;
+	for (i = 0; i < old_node->num_keys; i++)
+	{
 		old_node->pointers[i] = temp_pointers[i];
 		old_node->keys[i] = temp_keys[i];
-		old_node->num_keys++;
 	}
-	old_node->pointers[i] = temp_pointers[i];
+	old_node->pointers[split - 1] = temp_pointers[split - 1];
 	k_prime = temp_keys[split - 1];
-	for (++i, j = 0; i < order; i++, j++) {
+	// construct new node
+	new_node = make_node();
+	for (++i, j = 0; i < order; i++, j++)
+	{
 		new_node->pointers[j] = temp_pointers[i];
 		new_node->keys[j] = temp_keys[i];
 		new_node->num_keys++;
 	}
 	new_node->pointers[j] = temp_pointers[i];
-	
-	free(temp_pointers);
-	free(temp_keys);
-	
 	new_node->parent = old_node->parent;
-	for (i = 0; i <= new_node->num_keys; i++) {
-		child = new_node->pointers[i];
+	for (i = 0; i <= new_node->num_keys; i++)
+	{
+		node *child = new_node->pointers[i];
 		child->parent = new_node;
 	}
 
+	free(temp_pointers);
+	free(temp_keys);
 	/* Insert a new key into the parent of the two
 	 * nodes resulting from the split, with
 	 * the old node to the left and the new to the right.
 	 */
-
 	return insert_into_parent(root, old_node, k_prime, new_node);
 }
 
@@ -229,12 +225,8 @@ node * insert_into_parent(node * root, node * left, int key, node * right)
 	if (parent == NULL)
 		return insert_into_new_root(left, key, right);
 
-	/* Case: leaf or node. (Remainder of
-	 * function body.)  
-	 */
-
 	/* Find the parent's pointer to the left node. */
-	left_index = get_left_index(parent, left);
+	left_index = get_child_index(parent, left);
 
 	/* the new key fits into the node. */
 	if (parent->num_keys < order - 1)
@@ -244,11 +236,9 @@ node * insert_into_parent(node * root, node * left, int key, node * right)
 	return insert_into_node_after_splitting(root, parent, left_index, key, right);
 }
 
-/* First insertion:
- * start a new tree.
- */
-node * start_new_tree(int key, record * pointer) {
-
+/* First insertion */
+node * start_new_tree(int key, record * pointer)
+{
 	node * root = make_leaf();
 	root->keys[0] = key;
 	root->pointers[0] = pointer;
@@ -269,44 +259,27 @@ node * insert( node * root, int key, int value )
 	record * pointer;
 	node * leaf;
 
-	/* The current implementation ignores
-	 * duplicates.
-	 */
-
+	/* The current implementation ignores duplicates. */
 	if (find(root, key) != NULL)
 		return root;
 
-	/* Create a new record for the
-	 * value.
-	 */
+	/* Create a new record for the value. */
 	pointer = make_record(value);
 
-
-	/* Case: the tree does not exist yet.
-	 * Start a new tree.
-	 */
-
+	/* Case: the tree does not exist yet. */
 	if (root == NULL) 
 		return start_new_tree(key, pointer);
 
-
-	/* Case: the tree already exists.
-	 * (Rest of function body.)
-	 */
-
+	/* Case: the tree already exists. */
 	leaf = find_leaf(root, key);
 
-	/* Case: leaf has room for key and pointer.
-	 */
-
-	if (leaf->num_keys < order - 1) {
+	/* Case: leaf has room for key and pointer. */
+	if (leaf->num_keys < order - 1)
+	{
 		leaf = insert_into_leaf(leaf, key, pointer);
 		return root;
 	}
 
-
-	/* Case:  leaf must be split.
-	 */
-
+	/* Case:  leaf must be split. */
 	return insert_into_leaf_after_splitting(root, leaf, key, pointer);
 }
