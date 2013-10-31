@@ -7,8 +7,8 @@ node * delete_entry( node * root, node * n, int key, void * pointer );
  * is the leftmost child), returns -1 to signify
  * this special case.
  */
-int get_neighbor_index( node * n ) {
-
+int get_neighbor_index( node * n )
+{
 	int i;
 
 	/* Return the index of the key to the left
@@ -17,8 +17,9 @@ int get_neighbor_index( node * n ) {
 	 * If n is the leftmost child, this means
 	 * return -1.
 	 */
-	for (i = 0; i <= n->parent->num_keys; i++)
-		if (n->parent->pointers[i] == n)
+	node *parent = n->parent;
+	for (i = 0; i <= parent->num_keys; i++)
+		if (parent->pointers[i] == n)
 			return i - 1;
 
 	// Error state.
