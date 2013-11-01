@@ -27,7 +27,7 @@ insert_into_leaf_after_splitting(root, leaf, key, record)
 	copy lower half temp_leaf to leaf
 	new_leaf = make_leaf()
 	copy upper half temp_leaf to new_leaf
-	adjust leaf and new_leaf silibing(pointers[order - 1])
+	adjust leaf and new_leaf sibling(pointers[order - 1])
 	//insert new_leaf
 	return insert_into_parent(root, leaf, new_leaf->keys[0], new_leaf)
 -----------------------------------------------------------------
