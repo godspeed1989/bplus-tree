@@ -1,0 +1,9 @@
+
+TARGETNAME=bpt
+TARGETTYPE=DRIVER
+
+SOURCES =	main.c \
+			bpt_util.c \
+			bpt_find.c \
+			bpt_insert.c \
+			bpt_delete.c
