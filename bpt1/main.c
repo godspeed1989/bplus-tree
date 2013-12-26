@@ -1,4 +1,3 @@
-
 #include "bpt.h"
 
 #ifdef USER_APP
@@ -13,32 +12,46 @@ VOID DriverUnload(PDRIVER_OBJECT driver)
 }
 #endif
 
-#ifdef USER_APP
-int main( int argc, char ** argv )
-#else
-NTSTATUS DriverEntry(PDRIVER_OBJECT driver, PUNICODE_STRING reg_path)
-#endif
+void run_test_bpt(void*c)
 {
 	KEY_T i;
 	node * root = NULL;
 
-	DbgPrint("bpt: Our fs is loading...\r\n");
-	for(i = 0; i < 40; i++)
+	for(i = 0; i < 0xFFFFF; i++)
 		root = Insert(root, i, i*10);
 
-	for(i = 0; i < 40; i+=2)
+	for(i = 0; i < 0xFFFFF; i+=2)
 		root = Delete(root, i);
-
 #ifdef USER_APP
 	Print_Tree_File(root);
-#else	
-	driver->DriverUnload = DriverUnload;
 #endif
-
 	Destroy_Tree(root);
-#ifdef USER_APP
-	return 0;
-#else
-	return STATUS_SUCCESS;
+#ifndef USER_APP
+	PsTerminateSystemThread(STATUS_SUCCESS);
 #endif
 }
+
+#ifdef USER_APP
+int main( int argc, char ** argv )
+{
+	printf("bpt: Our bpt is loading...\r\n");
+	run_test_bpt(NULL);
+	return 0;
+}
+#else
+NTSTATUS DriverEntry(PDRIVER_OBJECT driver, PUNICODE_STRING reg_path)
+{
+	HANDLE hThread;
+	DbgPrint("bpt: Our bpt is loading...\r\n");
+	driver->DriverUnload = DriverUnload;
+	PsCreateSystemThread(
+		&hThread,
+		(ACCESS_MASK)0,
+		NULL,
+		(HANDLE)0,
+		NULL,
+		run_test_bpt,
+		NULL);
+	return STATUS_SUCCESS;
+}
+#endif
