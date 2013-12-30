@@ -15,18 +15,27 @@ VOID DriverUnload(PDRIVER_OBJECT driver)
 void run_test_bpt(void*c)
 {
 	KEY_T i;
-	node * root = NULL;
+	node * root = NULL, *left;
 
 	for(i = 0; i < 0xFFFFF; i++)
-		root = Insert(root, i, i*10);
+		root = Insert(root, i, i);
 
 	for(i = 0; i < 0xFFFFF; i+=2)
 		root = Delete(root, i);
+
 #ifdef USER_APP
+	left = Get_Leftmost_Leaf(root);
+	while(left)
+	{
+		for(i = 0; i < left->num_keys; i++)
+			printf(" %ld", ((record*)left->pointers[i])->value );
+		printf("\n");
+		left = left->pointers[order - 1];
+	}
 	Print_Tree_File(root);
-#endif
 	Destroy_Tree(root);
-#ifndef USER_APP
+#else
+	Destroy_Tree(root);
 	PsTerminateSystemThread(STATUS_SUCCESS);
 #endif
 }

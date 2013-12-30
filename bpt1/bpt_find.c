@@ -39,3 +39,12 @@ record * Find_Record( node * root, KEY_T key )
 	}
 	return NULL;
 }
+
+node* Get_Leftmost_Leaf(node *root)
+{
+	while (root != NULL && root->is_leaf == FALSE)
+	{
+		root = root->pointers[0];
+	}
+	return root;
+}

@@ -76,6 +76,7 @@ node * Delete ( node * root, KEY_T key );
 
 node * Find_Leaf ( node * root, KEY_T key );
 record * Find_Record ( node * root, KEY_T key );
+node* Get_Leftmost_Leaf(node *root);
 node * Destroy_Tree ( node * root );
 
 #ifdef USER_APP
