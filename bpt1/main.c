@@ -28,7 +28,7 @@ void run_test_bpt(void*c)
 	while(left)
 	{
 		for(i = 0; i < left->num_keys; i++)
-			printf(" %ld", ((record*)left->pointers[i])->value );
+			printf("(%ld,%ld)", left->keys[i], ((record*)left->pointers[i])->value );
 		printf("\n");
 		left = left->pointers[order - 1];
 	}
