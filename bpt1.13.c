@@ -1084,9 +1084,8 @@ node * adjust_root(node * root) {
  */
 node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index, int k_prime) {
 
-	int i, j, neighbor_insertion_index, n_start, n_end, new_k_prime;
+	int i, j, neighbor_insertion_index, n_end;
 	node * tmp;
-	bool split;
 
 	/* Swap neighbor with node if node is on the
 	 * extreme left and neighbor is to its right.
@@ -1106,22 +1105,9 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
 
 	neighbor_insertion_index = neighbor->num_keys;
 
-	/*
-	 * Nonleaf nodes may sometimes need to remain split,
-	 * if the insertion of k_prime would cause the resulting
-	 * single coalesced node to exceed the limit order - 1.
-	 * The variable split is always false for leaf nodes
-	 * and only sometimes set to true for nonleaf nodes.
-	 */
-
-	split = false;
-
 	/* Case:  nonleaf node.
 	 * Append k_prime and the following pointer.
-	 * If there is room in the neighbor, append
-	 * all pointers and keys from the neighbor.
-	 * Otherwise, append only cut(order) - 2 keys and
-	 * cut(order) - 1 pointers.
+	 * Append all pointers and keys from the neighbor.
 	 */
 
 	if (!n->is_leaf) {
@@ -1140,7 +1126,6 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
 			neighbor->pointers[i] = n->pointers[j];
 			neighbor->num_keys++;
 			n->num_keys--;
-			n_start++;
 		}
 
 		/* The number of pointers is always
@@ -1173,21 +1158,11 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
 		neighbor->pointers[order - 1] = n->pointers[order - 1];
 	}
 
-	if (!split) {
-		root = delete_entry(root, n->parent, k_prime, n);
-		free(n->keys);
-		free(n->pointers);
-		free(n); 
-	}
-	else
-		for (i = 0; i < n->parent->num_keys; i++)
-			if (n->parent->pointers[i + 1] == n) {
-				n->parent->keys[i] = new_k_prime;
-				break;
-			}
-
+	root = delete_entry(root, n->parent, k_prime, n);
+	free(n->keys);
+	free(n->pointers);
+	free(n); 
 	return root;
-
 }
 
 
